@@ -7,11 +7,9 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 
-# model_names = timm.list_models(pretrained=True)
-# pprint(model_names)
 
 loader = transforms.Compose([transforms.ToTensor()])
-image_ = "3.jpg"
+image_ = "2.jpg"
 unloader = transforms.ToPILImage()
 
 
