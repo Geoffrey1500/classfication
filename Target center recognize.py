@@ -44,6 +44,7 @@ plot_3d(
 # ax.scatter(cordi[:, 0], cordi[:, 1], cordi[:, 2])
 plt.show()
 
+
 def rotation(normal_vector_, support_vector):
     a = np.array(normal_vector_)
     b = np.array(support_vector)
