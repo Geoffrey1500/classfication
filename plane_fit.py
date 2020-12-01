@@ -8,11 +8,11 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 def rotation(normal_vector_, support_vector):
-    a = np.array(normal_vector_)
-    b = np.array(support_vector)
-    theta_ = np.arccos(np.dot(a, b)/(np.linalg.norm(a) * np.linalg.norm(b)))
+    a_ = np.array(normal_vector_)
+    b_ = np.array(support_vector)
+    theta_ = np.arccos(np.dot(a_, b_)/(np.linalg.norm(a_) * np.linalg.norm(b_)))
 
-    rotation_axis = np.cross(a, b)
+    rotation_axis = np.cross(a_, b_)
 
     q_angle = np.array([np.cos(theta_/2), np.sin(theta_/2), np.sin(theta_/2), np.sin(theta_/2)])
     q_vector = np.hstack((np.array([1]), rotation_axis))
@@ -31,14 +31,14 @@ def quaternion_mal(q_a, q_b):
     return np.array([s, x, y, z])
 
 
-def fit_plane(input_data, dis_sigma=1.5, depth_approx=1, loop_time=1):
+def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
     (m, n) = input_data.shape
     j_count = 0
     inner_total_pre = 0
     best_param = [0, 0, 0]
     row_rand_array = np.arange(m)
 
-    a_, b_ = [0, 0, 1], [1, 1, 1]
+    a_, b_ = [-3, 2, 1], [1, 1, 1]
 
     q_before_, q_after_ = rotation(a_, b_)
     in_data_tra = np.hstack((np.zeros((input_data.shape[0], 1)), input_data))
@@ -49,14 +49,13 @@ def fit_plane(input_data, dis_sigma=1.5, depth_approx=1, loop_time=1):
         i_ = 0
         ccc = 0
 
-        while i_ <= int(m):
+        while i_ <= int(m/100):
             index_ = np.random.choice(row_rand_array, 3, replace=False)
             picked_points = input_data[index_]
 
             param_ = np.linalg.solve(picked_points, -depth_approx*np.ones(picked_points.shape[0]))
 
             points_dis = np.abs(np.dot(input_data, param_) + depth_approx)/np.sqrt(np.sum(param_**2))
-            print(points_dis)
             total = np.sum(points_dis <= dis_sigma)
 
             if total > inner_total_pre:
@@ -91,19 +90,21 @@ def rgb2gray(rgb):
     return np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
 
 
-all_data = np.loadtxt('111.txt')
+all_data = np.loadtxt('222.txt')
 cordi = all_data[:, 0:3]
 color = all_data[:, 3::]
 
-vector = fit_plane(cordi, dis_sigma=0.01)
+vector = fit_plane(cordi, dis_sigma=0.1)
 
-a, b = list(vector), [1, 0, 0]
+a, b = [0, 0, 1], [1, 0, 0]
 q_before, q_after = rotation(a, b)
 data_tra = np.hstack((np.zeros((cordi.shape[0], 1)), cordi))
 data_rota = quaternion_mal(q_before, quaternion_mal(data_tra.T, q_after))
 data_final = np.delete(data_rota.T, 0, axis=1)
 
 print(np.std(data_final[:, 0]), np.std(data_final[:, 1]), np.std(data_final[:, 2]))
+print(np.mean(data_final[:, 0]), "我是平均值")
+print(data_final)
 
 x_n = np.max(data_final[:, 1]) - np.min(data_final[:, 1])
 y_n = np.max(data_final[:, 2]) - np.min(data_final[:, 2])
@@ -121,6 +122,7 @@ print(spacing_x, spacing_y)
 
 cut_data_ = data_final[:, 1::]
 data_helper = np.array([[np.min(data_final[:, 1]), np.min(data_final[:, 2])]])
+print(data_helper, 'I am helping you')
 new_cor = np.round((cut_data_ - data_helper)/((spacing_x + spacing_y)/2)).astype(int)
 print(np.min(new_cor[:, 0]), np.min(new_cor[:, 0]))
 # print(new_cor)
@@ -171,4 +173,4 @@ cv2.imshow('image', src)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-cv2.imwrite('111.png', src)
+# cv2.imwrite('original.png', src)

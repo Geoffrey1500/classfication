@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 from mpl_toolkits.mplot3d import Axes3D
 
-all_data = np.loadtxt('333.txt')
+all_data = np.loadtxt('111.txt')
 print(all_data)
 print(all_data.shape)
 
@@ -134,10 +134,10 @@ data_rota = quaternion_mal(q_before, quaternion_mal(data_tra.T, q_after))
 data_final = np.delete(data_rota.T, 0, axis=1)
 # print(data_final)
 
-# fig = plt.figure()
-# ax = Axes3D(fig)
-# ax.scatter(data_final[:, 0], data_final[:, 1], data_final[:, 2])
-# plt.show()
+fig = plt.figure()
+ax = Axes3D(fig)
+ax.scatter(data_final[:, 0], data_final[:, 1], data_final[:, 2])
+plt.show()
 
 print(np.std(data_final[:, 0]), np.std(data_final[:, 1]), np.std(data_final[:, 2]))
 
@@ -186,7 +186,7 @@ base_img.reshape((pixel_x+1, pixel_y+1, 3))
 im = Image.fromarray(base_img, 'RGB')
 print(im)
 im = im.convert('1')
-plt.imshow(base_img[1])
+# plt.imshow(base_img[1])
 plt.show()
 
 # img = Image.open(base_img)
