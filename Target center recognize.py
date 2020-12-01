@@ -2,9 +2,10 @@ from skspatial.objects import Points, Plane
 from skspatial.plotting import plot_3d
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
 from mpl_toolkits.mplot3d import Axes3D
 
-all_data = np.loadtxt('111.txt')
+all_data = np.loadtxt('333.txt')
 print(all_data)
 print(all_data.shape)
 
@@ -16,6 +17,8 @@ points = Points(cordi)
 
 plane = Plane.best_fit(points)
 print(type(plane.point), plane.point)
+
+print(list(plane.point), list(plane.normal), 'dddddd')
 
 point_projected = plane.project_point(cordi[0])
 print(cordi[0])
@@ -42,7 +45,7 @@ plot_3d(
 # fig = plt.figure()
 # ax = Axes3D(fig)
 # ax.scatter(cordi[:, 0], cordi[:, 1], cordi[:, 2])
-plt.show()
+# plt.show()
 
 
 def rotation(normal_vector_, support_vector):
@@ -121,3 +124,71 @@ def sampling_point(data_):
     sampling_set = data_[index_]
 
     return sampling_set
+
+
+
+a, b = list(plane.normal), [1, 0, 0]
+q_before, q_after = rotation(a, b)
+data_tra = np.hstack((np.zeros((cordi_after.shape[0], 1)), cordi_after))
+data_rota = quaternion_mal(q_before, quaternion_mal(data_tra.T, q_after))
+data_final = np.delete(data_rota.T, 0, axis=1)
+# print(data_final)
+
+# fig = plt.figure()
+# ax = Axes3D(fig)
+# ax.scatter(data_final[:, 0], data_final[:, 1], data_final[:, 2])
+# plt.show()
+
+print(np.std(data_final[:, 0]), np.std(data_final[:, 1]), np.std(data_final[:, 2]))
+
+x_n = np.max(data_final[:, 1]) - np.min(data_final[:, 1])
+y_n = np.max(data_final[:, 2]) - np.min(data_final[:, 2])
+
+scale_x_y = y_n / x_n
+
+x_number = np.sqrt(len(data_final)/scale_x_y)
+y_number = scale_x_y*np.sqrt(len(data_final)/scale_x_y)
+print(x_number, y_number, x_number*y_number)
+
+spacing_x = x_n/x_number
+spacing_y = y_n/y_number
+
+print(spacing_x, spacing_y)
+
+cut_data_ = data_final[:, 1::]
+data_helper = np.array([[np.min(data_final[:, 1]), np.min(data_final[:, 2])]])
+new_cor = np.round((cut_data_ - data_helper)/((spacing_x + spacing_y)/2)).astype(int)
+print(np.min(new_cor[:, 0]), np.min(new_cor[:, 0]))
+# print(new_cor)
+
+pixel_x, pixel_y = np.max(new_cor[:, 0]), np.max(new_cor[:, 1])
+print(pixel_x, pixel_y)
+print(len(new_cor), pixel_x*pixel_y)
+
+base_img = np.zeros((3, int(pixel_x) + 1, int(pixel_y) + 1))
+print(base_img.shape)
+# print(base_img[0, 1, 1])
+
+for i in range(len(new_cor)):
+    img_index_x = new_cor[i, 0]
+    img_index_y = new_cor[i, 1]
+    # print(img_index_x, img_index_y)
+
+    base_img[0, img_index_x, img_index_y] = all_data[i][-3]
+    base_img[1, img_index_x, img_index_y] = all_data[i][-2]
+    base_img[2, img_index_x, img_index_y] = all_data[i][-1]
+
+print(base_img)
+# print(base_img[1])
+base_img.astype('uint8')
+
+base_img.reshape((pixel_x+1, pixel_y+1, 3))
+im = Image.fromarray(base_img, 'RGB')
+print(im)
+im = im.convert('1')
+plt.imshow(base_img[1])
+plt.show()
+
+# img = Image.open(base_img)
+# im.show()
+
