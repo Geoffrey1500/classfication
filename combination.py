@@ -76,10 +76,6 @@ def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
     return best_param_
 
 
-def rgb2gray(rgb):
-    return np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
-
-
 def data_preprocess(file_name):
     data_raw_ = np.loadtxt(file_name)
     m_, n_ = data_raw_.shape
@@ -87,25 +83,24 @@ def data_preprocess(file_name):
     color_data_ = data_raw_[:, 3::]
 
     if n_ == 6:
-        color_in_gray_ = np.dot(color_data_, np.array([[0.299], [0.587], [0.114]]))
+        color_in_gray_ = np.dot(color_data_, np.array([[299], [587], [114]]))/1000
+        color_in_gray_ = color_in_gray_.astype(np.int)
+        scale_k_ = 255 / (np.max(color_in_gray_) - np.min(color_in_gray_))
+        color_in_gray_ = 0 + scale_k_ * (color_in_gray_ - np.min(color_in_gray_))
     else:
         scale_k_ = 255/(np.max(color_data_) - np.min(color_data_))
         color_in_gray_ = 0 + scale_k_*(color_data_ - np.min(color_data_))
 
-    x_temp_ = color_in_gray_.flatten()
-    print(x_temp_.shape)
-    counts, bins, bars = plt.hist(x_temp_, bins=20)
-    print(counts, bins, bars)
-    plt.show()
+    threshold_gray_ = int(np.average(color_in_gray_))
 
-    color_in_binary_1 = np.where(color_in_gray_ >= 150, color_in_gray_, 0)
-    color_in_binary_2 = np.where(color_in_binary_1 < 150, color_in_binary_1, 255)
+    color_in_binary_1 = np.where(color_in_gray_ >= threshold_gray_, color_in_gray_, 0)
+    color_in_binary_2 = np.where(color_in_binary_1 < threshold_gray_, color_in_binary_1, 255)
     color_in_binary_2 = color_in_binary_2.astype('uint8')
 
     return coordinate_data_, color_in_binary_2
 
 
-cordi, color = data_preprocess('B_MU_TLS.txt')
+cordi, color = data_preprocess('B_MU_pic.txt')
 
 vector = fit_plane(cordi, dis_sigma=0.008)
 
@@ -117,7 +112,6 @@ data_final = np.delete(data_rota.T, 0, axis=1)
 
 print(np.std(data_final[:, 0]), np.std(data_final[:, 1]), np.std(data_final[:, 2]))
 print(np.mean(data_final[:, 0]), "我是平均值")
-# print(data_final)
 
 x_n = np.max(data_final[:, 1]) - np.min(data_final[:, 1])
 y_n = np.max(data_final[:, 2]) - np.min(data_final[:, 2])
@@ -149,8 +143,16 @@ for i in range(len(new_cor)):
     img_index_x, img_index_y = new_cor[i, 0], new_cor[i, 1]
     base_img[img_index_x, img_index_y] = color[i, 0]
 
-cv2.imshow('image', base_img)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+kernel_noise = np.ones((2, 2), dtype='uint8')
+base_img_de_noise = cv2.morphologyEx(base_img, cv2.MORPH_CLOSE, kernel_noise)
 
-# cv2.imwrite('B_MU_PIC.png', src)
+# plt.imshow(base_img, cmap='gray')
+# fig = plt.figure()
+# plt.imshow(base_img_de_noise, cmap='gray')
+# plt.show()
+
+# cv2.imshow('image', base_img)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+cv2.imwrite('B_MU_pic.png', base_img_de_noise)
