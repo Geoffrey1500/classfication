@@ -32,11 +32,11 @@ def quaternion_mal(q_a, q_b):
 
 
 def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
-    (m, n) = input_data.shape
+    (m_, n_) = input_data.shape
     j_count = 0
     inner_total_pre = 0
     best_param = [0, 0, 0]
-    row_rand_array = np.arange(m)
+    row_rand_array = np.arange(m_)
 
     a_, b_ = [-3, 2, 1], [1, 1, 1]
 
@@ -47,9 +47,8 @@ def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
 
     while j_count <= loop_time:
         i_ = 0
-        ccc = 0
 
-        while i_ <= int(m/500):
+        while i_ <= int(m_/500):
             index_ = np.random.choice(row_rand_array, 3, replace=False)
             picked_points = input_data[index_]
 
@@ -101,9 +100,6 @@ def data_preprocess(file_name):
 
 
 cordi, color = data_preprocess('B_MU_pic.txt')
-# print(color)
-
-print(color.shape)
 
 vector = fit_plane(cordi, dis_sigma=0.008)
 
@@ -126,17 +122,15 @@ x_number = np.sqrt(len(data_final)/scale_x_y)
 y_number = scale_x_y*np.sqrt(len(data_final)/scale_x_y)
 print(x_number, y_number, x_number*y_number)
 
-spacing_x = x_n/x_number
-spacing_y = y_n/y_number
-
-print(spacing_x, spacing_y)
+spacing_x, spacing_y = x_n/x_number, y_n/y_number
+print(spacing_x, spacing_y, "x 和 y 的尺度")
 
 cut_data_ = data_final[:, 1::]
 data_helper = np.array([[np.min(data_final[:, 1]), np.min(data_final[:, 2])]])
 print(data_helper, 'I am helping you')
 new_cor = np.round((cut_data_ - data_helper)/((spacing_x + spacing_y)/2)).astype(int)
 print(np.min(new_cor[:, 0]), np.min(new_cor[:, 1]))
-# print(new_cor)
+
 
 pixel_x, pixel_y = np.max(new_cor[:, 0]), np.max(new_cor[:, 1])
 print(pixel_x, pixel_y)
@@ -144,27 +138,11 @@ print(len(new_cor), pixel_x*pixel_y)
 
 base_img = np.zeros((int(pixel_x) + 1, int(pixel_y) + 1))
 print(base_img.shape)
-# print(base_img[0, 1, 1])
+
 for i in range(len(new_cor)):
-    img_index_x = new_cor[i, 0]
-    img_index_y = new_cor[i, 1]
-    # print(img_index_x, img_index_y)
-
-    base_img[img_index_x, img_index_y] = color[i, 0]
-    base_img[img_index_x, img_index_y] = color[i, 0]
+    img_index_x, img_index_y = new_cor[i, 0], new_cor[i, 1]
     base_img[img_index_x, img_index_y] = color[i, 0]
 
-print(base_img)
-# print(base_img[1])
-
-
-# plt.imshow(base_img)
-# plt.savefig('twp.jpg')
-# plt.show()
-
-# img = Image.open(base_img)
-# im.show()
-#
 cv2.imshow('image', base_img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
