@@ -49,7 +49,7 @@ def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
         i_ = 0
         ccc = 0
 
-        while i_ <= int(m/100):
+        while i_ <= int(m):
             index_ = np.random.choice(row_rand_array, 3, replace=False)
             picked_points = input_data[index_]
 
@@ -69,6 +69,8 @@ def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
     best_param_be = np.hstack((np.zeros((1, 1)), best_param.reshape([1, -1])))
     para_rota = quaternion_mal(q_before_pa, quaternion_mal(best_param_be.T, q_after_pa))
     best_param_ = np.delete(para_rota.T, 0, axis=1).flatten()
+
+    best_param_ = best_param_ / np.sqrt(np.sum(best_param_ ** 2, axis=0))
 
     print("Calculated normal vector is: " + str(best_param_))
 
@@ -90,13 +92,13 @@ def rgb2gray(rgb):
     return np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
 
 
-all_data = np.loadtxt('222.txt')
+all_data = np.loadtxt('B_MU_pic.txt')
 cordi = all_data[:, 0:3]
 color = all_data[:, 3::]
 
-vector = fit_plane(cordi, dis_sigma=0.1)
+vector = fit_plane(cordi, dis_sigma=0.008)
 
-a, b = [0, 0, 1], [1, 0, 0]
+a, b = list(vector), [1, 0, 0]
 q_before, q_after = rotation(a, b)
 data_tra = np.hstack((np.zeros((cordi.shape[0], 1)), cordi))
 data_rota = quaternion_mal(q_before, quaternion_mal(data_tra.T, q_after))
@@ -104,7 +106,7 @@ data_final = np.delete(data_rota.T, 0, axis=1)
 
 print(np.std(data_final[:, 0]), np.std(data_final[:, 1]), np.std(data_final[:, 2]))
 print(np.mean(data_final[:, 0]), "我是平均值")
-print(data_final)
+# print(data_final)
 
 x_n = np.max(data_final[:, 1]) - np.min(data_final[:, 1])
 y_n = np.max(data_final[:, 2]) - np.min(data_final[:, 2])
@@ -124,7 +126,7 @@ cut_data_ = data_final[:, 1::]
 data_helper = np.array([[np.min(data_final[:, 1]), np.min(data_final[:, 2])]])
 print(data_helper, 'I am helping you')
 new_cor = np.round((cut_data_ - data_helper)/((spacing_x + spacing_y)/2)).astype(int)
-print(np.min(new_cor[:, 0]), np.min(new_cor[:, 0]))
+print(np.min(new_cor[:, 0]), np.min(new_cor[:, 1]))
 # print(new_cor)
 
 pixel_x, pixel_y = np.max(new_cor[:, 0]), np.max(new_cor[:, 1])
@@ -168,9 +170,9 @@ g = g.astype('uint8')
 b = base_img[2]
 b = b.astype('uint8')
 src = cv2.merge([b, g, r])
-
+#
 cv2.imshow('image', src)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
-# cv2.imwrite('original.png', src)
+cv2.imwrite('B_MU_PIC.png', src)

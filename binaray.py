@@ -1,7 +1,6 @@
 import cv2
 
-img = cv2.imread('original'
-                 '.png', 0)
+img = cv2.imread('B_MU_PIC.png', 0)
 ret0, thresh0 = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY)
 
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))

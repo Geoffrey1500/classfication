@@ -15,8 +15,8 @@ def goodFeaturesToTrack_Demo(val):
     # Parameters for Shi-Tomasi algorithm
     qualityLevel = 0.01
     minDistance = 10
-    blockSize = 2
-    gradientSize = 7
+    blockSize = 6
+    gradientSize = 11
     useHarrisDetector = False
     k = 0.04
     # Copy the source image
@@ -45,7 +45,7 @@ def goodFeaturesToTrack_Demo(val):
 
 
 parser = argparse.ArgumentParser(description='Code for Shi-Tomasi corner detector tutorial.')
-parser.add_argument('--input', help='Path to input image.', default='original.png')
+parser.add_argument('--input', help='Path to input image.', default='B_MU_PIC.png')
 args = parser.parse_args()
 src = cv.imread(cv.samples.findFile(args.input))
 if src is None:

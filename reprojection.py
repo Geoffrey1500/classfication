@@ -1,14 +1,14 @@
 import numpy as np
 
-corner_pixel_cor = np.array([181.04941, 181.6329])
-spacing = np.array([0.0013063323149889777, 0.0013063323149889777])
+corner_pixel_cor = np.array([109.80508, 101.805664])
+spacing = np.array([0.001149567934554709, 0.001149567934554709])
 
-help_x_y = np.array([-0.25952,  7.84584])
+help_x_y = np.array([0.03818093, 5.93416889])
 
 back_cor = corner_pixel_cor*spacing + help_x_y
 print(back_cor)
-back_cor_full = np.insert(back_cor, 0, -1.850778386727781)
-print(back_cor_full)
+back_cor_full = np.insert(back_cor, 0, -1.9438325453827976)
+print(back_cor_full, '转换前中心点坐标')
 
 
 def rotation(normal_vector_, support_vector):
@@ -35,14 +35,14 @@ def quaternion_mal(q_a, q_b):
     return np.array([s, x, y, z])
 
 
-vector = [0.01832478, -0.01364734, 0.46071679]
-print(np.array(vector)*2.1705308373936187, "比一下")
+vector = [0.01722587, 0.00309399, 0.99984684]
+print(np.array(vector), "比一下")
 
 
 cordi = np.array([list(back_cor_full)])
 print(cordi, "before rotation")
 
-b, a = [0, 0, 1], [1, 0, 0]
+b, a = vector, [1, 0, 0]
 q_before, q_after = rotation(a, b)
 data_tra = np.hstack((np.zeros((cordi.shape[0], 1)), cordi))
 data_rota = quaternion_mal(q_before, quaternion_mal(data_tra.T, q_after))
