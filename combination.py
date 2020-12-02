@@ -49,7 +49,7 @@ def fit_plane(input_data, dis_sigma=0.05, depth_approx=1, loop_time=2):
         i_ = 0
         ccc = 0
 
-        while i_ <= int(m):
+        while i_ <= int(m/500):
             index_ = np.random.choice(row_rand_array, 3, replace=False)
             picked_points = input_data[index_]
 
@@ -93,27 +93,15 @@ def data_preprocess(file_name):
         scale_k_ = 255/(np.max(color_data_) - np.min(color_data_))
         color_in_gray_ = 0 + scale_k_*(color_data_ - np.min(color_data_))
 
-    print(color_in_gray_)
-    color_in_binary_1 = np.where(color_in_gray_ >= 200, color_in_gray_, 0)
-    print(color_in_binary_1)
-    color_in_binary_2 = np.where(color_in_binary_1 < 200, color_in_binary_1, 255)
-    print(color_in_binary_2)
+    color_in_binary_1 = np.where(color_in_gray_ >= 150, color_in_gray_, 0)
+    color_in_binary_2 = np.where(color_in_binary_1 < 150, color_in_binary_1, 255)
+    color_in_binary_2 = color_in_binary_2.astype('uint8')
 
     return coordinate_data_, color_in_binary_2
 
 
-cordi, color = data_preprocess('222.txt')
-# m, n = all_data.shape
-# print(all_data.shape, m, n)
-# cordi = all_data[:, 0:3]
-# color = all_data[:, 3::]
-# gray_ = np.dot(color, np.array([[0.299], [0.587], [0.114]]))
-# gray_copy = gray_.copy()
-# gray_1 = np.where(gray_copy >= 200, gray_copy, 0)
-# gray_2 = gray_1.copy()
-# gray_2 = np.where(gray_2 < 200, gray_2, 255)
-
-print(color)
+cordi, color = data_preprocess('B_MU_pic.txt')
+# print(color)
 
 print(color.shape)
 
@@ -154,45 +142,30 @@ pixel_x, pixel_y = np.max(new_cor[:, 0]), np.max(new_cor[:, 1])
 print(pixel_x, pixel_y)
 print(len(new_cor), pixel_x*pixel_y)
 
-base_img = np.zeros((3, int(pixel_x) + 1, int(pixel_y) + 1))
+base_img = np.zeros((int(pixel_x) + 1, int(pixel_y) + 1))
 print(base_img.shape)
 # print(base_img[0, 1, 1])
-
 for i in range(len(new_cor)):
     img_index_x = new_cor[i, 0]
     img_index_y = new_cor[i, 1]
     # print(img_index_x, img_index_y)
 
-    base_img[0, img_index_x, img_index_y] = all_data[i][-3]
-    base_img[1, img_index_x, img_index_y] = all_data[i][-2]
-    base_img[2, img_index_x, img_index_y] = all_data[i][-1]
+    base_img[img_index_x, img_index_y] = color[i, 0]
+    base_img[img_index_x, img_index_y] = color[i, 0]
+    base_img[img_index_x, img_index_y] = color[i, 0]
 
-# print(base_img[0])
+print(base_img)
 # print(base_img[1])
-img_re = np.dstack((base_img[0], base_img[1], base_img[2]))
-img_re = img_re.astype('uint8')
-print(img_re.shape, 'rerererere')
 
-after_ = rgb2gray(img_re)
-after_.astype('uint8')
-print(after_.shape)
 
-# plt.imshow(img_re)
+# plt.imshow(base_img)
 # plt.savefig('twp.jpg')
 # plt.show()
 
 # img = Image.open(base_img)
 # im.show()
-
-r = base_img[0]
-r = r.astype('uint8')
-g = base_img[1]
-g = g.astype('uint8')
-b = base_img[2]
-b = b.astype('uint8')
-src = cv2.merge([b, g, r])
 #
-cv2.imshow('image', src)
+cv2.imshow('image', base_img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
