@@ -92,6 +92,12 @@ def data_preprocess(file_name):
         scale_k_ = 255/(np.max(color_data_) - np.min(color_data_))
         color_in_gray_ = 0 + scale_k_*(color_data_ - np.min(color_data_))
 
+    x_temp_ = color_in_gray_.flatten()
+    print(x_temp_.shape)
+    counts, bins, bars = plt.hist(x_temp_, bins=20)
+    print(counts, bins, bars)
+    plt.show()
+
     color_in_binary_1 = np.where(color_in_gray_ >= 150, color_in_gray_, 0)
     color_in_binary_2 = np.where(color_in_binary_1 < 150, color_in_binary_1, 255)
     color_in_binary_2 = color_in_binary_2.astype('uint8')
@@ -99,7 +105,7 @@ def data_preprocess(file_name):
     return coordinate_data_, color_in_binary_2
 
 
-cordi, color = data_preprocess('B_MU_pic.txt')
+cordi, color = data_preprocess('B_MU_TLS.txt')
 
 vector = fit_plane(cordi, dis_sigma=0.008)
 
