@@ -2,6 +2,7 @@ from skspatial.objects import Points, Plane
 from skspatial.plotting import plot_3d
 import matplotlib.pyplot as plt
 import numpy as np
+from math import cos, sin, radians
 import cv2
 from PIL import Image
 from mpl_toolkits.mplot3d import Axes3D
@@ -80,27 +81,94 @@ def data_preprocess(file_name):
     data_raw_ = np.loadtxt(file_name)
     m_, n_ = data_raw_.shape
     coordinate_data_ = data_raw_[:, 0:3]
-    color_data_ = data_raw_[:, 3::]
 
     if n_ == 6:
+        color_data_ = data_raw_[:, 3::]
         color_in_gray_ = np.dot(color_data_, np.array([[299], [587], [114]]))/1000
         color_in_gray_ = color_in_gray_.astype(np.int)
         scale_k_ = 255 / (np.max(color_in_gray_) - np.min(color_in_gray_))
         color_in_gray_ = 0 + scale_k_ * (color_in_gray_ - np.min(color_in_gray_))
     else:
+        color_data_ = data_raw_[:, 3:4]
         scale_k_ = 255/(np.max(color_data_) - np.min(color_data_))
         color_in_gray_ = 0 + scale_k_*(color_data_ - np.min(color_data_))
 
-    threshold_gray_ = int(np.average(color_in_gray_))
+    color_in_gray_ = color_in_gray_.astype('uint8')
 
-    color_in_binary_1 = np.where(color_in_gray_ >= threshold_gray_, color_in_gray_, 0)
-    color_in_binary_2 = np.where(color_in_binary_1 < threshold_gray_, color_in_binary_1, 255)
-    color_in_binary_2 = color_in_binary_2.astype('uint8')
-
-    return coordinate_data_, color_in_binary_2
+    return coordinate_data_, color_in_gray_
 
 
-cordi, color = data_preprocess('B_MU_pic.txt')
+def corner_detector(src_gray_, val):
+    maxCorners = max(val, 1)
+    # Parameters for Shi-Tomasi algorithm
+    qualityLevel = 0.99
+
+    circle = np.zeros(src_gray_.shape, dtype="uint8")
+    central_x, central_y = src_gray_.shape
+    mask_ = cv2.circle(circle, (int(central_x/2), int(central_y/2)), int((central_x + central_y)/8), 255, -1)
+    blockSize = int((central_x + central_y) / 16)
+
+    # Copy the source image
+    copy = np.copy(src_gray_)
+
+    # Apply corner detection
+    corners = cv2.goodFeaturesToTrack(copy, maxCorners, qualityLevel, minDistance=None, mask=mask_, blockSize=blockSize)
+    if corners.shape[0] > 1:
+        print('**URGENT** Number of corners detected is larger than 1:', corners.shape[0], "You should have a check!!!")
+
+    # Set the needed parameters to find the refined corners
+    winSize = (3, 3)
+    zeroZone = (-1, -1)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TermCriteria_COUNT, 50, 0.001)
+    # Calculate the refined corner locations
+    corners = cv2.cornerSubPix(copy, corners, winSize, zeroZone, criteria)
+    # Write them down
+    # for i in range(corners.shape[0]):
+    #     print(" -- Refined Corner [", i, "]  (", corners[i, 0, 0], ",", corners[i, 0, 1], ")")
+    #     print(corners[0], '所有的角点')
+
+    return corners[0]
+
+
+def getRotationMatrix2D(theta, cx=0, cy=0):
+    # 角度值转换为弧度值
+    # 因为图像的左上角是原点 需要×-1
+    theta = radians(-1 * theta)
+
+    M = np.float32([
+        [cos(theta), -sin(theta), (1-cos(theta))*cx + sin(theta)*cy],
+        [sin(theta), cos(theta), -sin(theta)*cx + (1-cos(theta))*cy]])
+    return M
+
+
+def pattern_corner_detector(src_gray_):
+    x_, y_ = int(src_gray_.shape[0] / 16), int(src_gray_.shape[1] / 16)
+    part_1 = np.zeros((x_, y_))
+    part_2 = np.ones((x_, y_)) * 255
+    template_up = np.hstack((part_1, part_2))
+    template_low = np.hstack((part_2, part_1))
+
+    template_ = np.vstack((template_up, template_low))
+    template_ = template_.astype('uint8')
+
+    cx = template_.shape[1]
+    cy = template_.shape[0]
+
+    rotation_matrix_ = getRotationMatrix2D(-35, cx=int(cx/2), cy=int(cy/2))
+    rotated_30 = cv2.warpAffine(template_, rotation_matrix_, (cx, cy))
+
+    result = cv2.matchTemplate(src_gray_, rotated_30, cv2.TM_SQDIFF)
+    # cv2.normalize(result, result, 0, 1, cv2.NORM_MINMAX, -1)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    # print(min_val, max_val, min_loc, max_loc)
+    # print(np.array(list(min_loc)) + np.array([cx / 2, cy / 2]))
+    center_loc = np.array(list(min_loc)) + np.array([cx / 2, cy / 2])
+    return center_loc
+
+
+file_name = 'B_MU_pic'
+
+cordi, color = data_preprocess(file_name + '.txt')
 
 vector = fit_plane(cordi, dis_sigma=0.008)
 
@@ -123,13 +191,13 @@ y_number = scale_x_y*np.sqrt(len(data_final)/scale_x_y)
 print(x_number, y_number, x_number*y_number)
 
 spacing_x, spacing_y = x_n/x_number, y_n/y_number
-print(spacing_x, spacing_y, "x 和 y 的尺度")
+spacing_avg = np.average([spacing_x, spacing_y])/8
+print(spacing_x, spacing_y, spacing_avg, "x 和 y 的尺度")
 
 cut_data_ = data_final[:, 1::]
 data_helper = np.array([[np.min(data_final[:, 1]), np.min(data_final[:, 2])]])
 print(data_helper, 'I am helping you')
-new_cor = np.round((cut_data_ - data_helper)/((spacing_x + spacing_y)/2)).astype(int)
-print(np.min(new_cor[:, 0]), np.min(new_cor[:, 1]))
+new_cor = np.round((cut_data_ - data_helper)/spacing_avg).astype(int)
 
 
 pixel_x, pixel_y = np.max(new_cor[:, 0]), np.max(new_cor[:, 1])
@@ -143,16 +211,43 @@ for i in range(len(new_cor)):
     img_index_x, img_index_y = new_cor[i, 0], new_cor[i, 1]
     base_img[img_index_x, img_index_y] = color[i, 0]
 
-kernel_noise = np.ones((2, 2), dtype='uint8')
+kernel_noise = np.ones((1, 1), dtype='uint8')
+base_img = base_img.astype(np.uint8)
 base_img_de_noise = cv2.morphologyEx(base_img, cv2.MORPH_CLOSE, kernel_noise)
+# base_img_de_noise = cv2.morphologyEx(base_img_de_noise, cv2.MORPH_CLOSE, kernel_noise)
+
+cv2.imwrite(file_name + '.png', base_img)
+
+
+corner_detected = pattern_corner_detector(base_img_de_noise)
+print(corner_detected, '角点坐标')
 
 # plt.imshow(base_img, cmap='gray')
 # fig = plt.figure()
 # plt.imshow(base_img_de_noise, cmap='gray')
 # plt.show()
 
-# cv2.imshow('image', base_img)
+# cv2.imshow('image', base_img_de_noise)
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-cv2.imwrite('B_MU_pic.png', base_img_de_noise)
+# cv2.imwrite('B_MU_pic.png', base_img_de_noise)
+
+corner_pixel_cor = np.array([corner_detected[1], corner_detected[0]])
+back_cor = corner_pixel_cor*spacing_avg + data_helper
+print(back_cor)
+back_cor_full = np.insert(back_cor, 0, np.mean(data_final[:, 0]))
+
+cordi_before = np.array([list(back_cor_full)])
+# print(cordi_before, "before rotation")
+
+b_2, a_2 = list(vector), [1, 0, 0]
+q_before_2, q_after_2 = rotation(a_2, b_2)
+data_tra_2 = np.hstack((np.zeros((cordi_before.shape[0], 1)), cordi_before))
+data_rota_2 = quaternion_mal(q_before_2, quaternion_mal(data_tra_2.T, q_after_2))
+data_final_2 = np.delete(data_rota_2.T, 0, axis=1)
+
+print(data_final_2, "after_rotation")
+print([-4.977487, 1.802372, -1.798017], 'Ground Truth')
+print([-6.083892, 0.139264, -1.839561], "Ground Truth")
+
