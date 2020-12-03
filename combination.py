@@ -131,8 +131,11 @@ def corner_detector(src_gray_, val):
 
 
 def pattern_corner_detector(src_gray_):
-    print(src_gray_.shape, '照片形状')
-    x_, y_ = int(src_gray_.shape[0] / 16), int(src_gray_.shape[1] / 16)
+    ret2, src_gray_ = cv2.threshold(src_gray_, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # print(src_gray_.shape, '照片形状')
+    x_, y_ = int(src_gray_.shape[0] / 8), int(src_gray_.shape[1] / 8)
+    x_ = min(x_, y_)
+    y_ = min(x_, y_)
     part_1 = np.zeros((x_, y_))
     part_2 = np.ones((x_, y_)) * 255
     template_up = np.hstack((part_1, part_2))
@@ -145,21 +148,36 @@ def pattern_corner_detector(src_gray_):
     cy = template_.shape[0]
 
     print(cx, cy, 'template shape')
+    min_val_initial = 10**10000
 
-    rotation_matrix_ = cv2.getRotationMatrix2D((int(cx/2), int(cy/2)), -35, 1)
-    rotated_ = cv2.warpAffine(template_, rotation_matrix_, (cx, cy))
-    ret_rotation, rotated_ = cv2.threshold(rotated_, 150, 255, cv2.THRESH_BINARY)
+    for ang_ in np.linspace(0, 180, 181, endpoint=True):
+        rotation_matrix_ = cv2.getRotationMatrix2D((int(cx / 2), int(cy / 2)), ang_, 1.7)
+        rotated_ = cv2.warpAffine(template_, rotation_matrix_, (cx, cy))
+        ret_rotation, rotated_ = cv2.threshold(rotated_, 150, 255, cv2.THRESH_BINARY)
 
-    result = cv2.matchTemplate(src_gray_, rotated_, cv2.TM_SQDIFF)
-    # cv2.normalize(result, result, 0, 1, cv2.NORM_MINMAX, -1)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        result = cv2.matchTemplate(src_gray_, rotated_, cv2.TM_SQDIFF)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+        if min_val < min_val_initial:
+            min_val_initial = min_val
+            min_loc = min_loc
+            center_loc = np.array(list(min_loc)) + np.array([cx / 2, cy / 2])
+
+    # rotation_matrix_ = cv2.getRotationMatrix2D((int(cx/2), int(cy/2)), angle, 1.7)
+    # rotated_ = cv2.warpAffine(template_, rotation_matrix_, (cx, cy))
+    # ret_rotation, rotated_ = cv2.threshold(rotated_, 150, 255, cv2.THRESH_BINARY)
+    #
+    # result = cv2.matchTemplate(src_gray_, rotated_, cv2.TM_SQDIFF)
+    # # cv2.normalize(result, result, 0, 1, cv2.NORM_MINMAX, -1)
+    # min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
     # print(min_val, max_val, min_loc, max_loc)
     # print(np.array(list(min_loc)) + np.array([cx / 2, cy / 2]))
-    center_loc = np.array(list(min_loc)) + np.array([cx / 2, cy / 2])
+    # center_loc = np.array(list(min_loc)) + np.array([cx / 2, cy / 2])
+    # print(center_loc, "what happend")
     return center_loc
 
 
-file_name = 'B_ML'
+file_name = 'merged'
 
 cordi, color = data_preprocess(file_name + '.txt')
 
@@ -192,7 +210,6 @@ data_helper = np.array([[np.min(data_final[:, 1]), np.min(data_final[:, 2])]])
 print(data_helper, 'I am helping you')
 new_cor = np.round((cut_data_ - data_helper)/spacing_avg).astype(int)
 
-
 pixel_x, pixel_y = np.max(new_cor[:, 0]), np.max(new_cor[:, 1])
 print(pixel_x, pixel_y)
 print(len(new_cor), pixel_x*pixel_y)
@@ -204,27 +221,16 @@ for i in range(len(new_cor)):
     img_index_x, img_index_y = new_cor[i, 0], new_cor[i, 1]
     base_img[img_index_x, img_index_y] = color[i, 0]
 
-kernel_noise = np.ones((1, 1), dtype='uint8')
+kernel_noise = np.ones((16, 16), dtype='uint8')
 base_img = base_img.astype(np.uint8)
 base_img_de_noise = cv2.morphologyEx(base_img, cv2.MORPH_CLOSE, kernel_noise)
 # base_img_de_noise = cv2.morphologyEx(base_img_de_noise, cv2.MORPH_CLOSE, kernel_noise)
 
-cv2.imwrite(file_name + '.png', base_img)
+cv2.imwrite(file_name + '.png', base_img_de_noise)
 
 
 corner_detected = pattern_corner_detector(base_img_de_noise)
 print(corner_detected, '角点坐标')
-
-# plt.imshow(base_img, cmap='gray')
-# fig = plt.figure()
-# plt.imshow(base_img_de_noise, cmap='gray')
-# plt.show()
-
-# cv2.imshow('image', base_img_de_noise)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-# cv2.imwrite('B_MU_pic.png', base_img_de_noise)
 
 corner_pixel_cor = np.array([corner_detected[1], corner_detected[0]])
 back_cor = corner_pixel_cor*spacing_avg + data_helper
