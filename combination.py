@@ -130,18 +130,8 @@ def corner_detector(src_gray_, val):
     return corners[0]
 
 
-def getRotationMatrix2D(theta, cx=0, cy=0):
-    # 角度值转换为弧度值
-    # 因为图像的左上角是原点 需要×-1
-    theta = radians(-1 * theta)
-
-    M = np.float32([
-        [cos(theta), -sin(theta), (1-cos(theta))*cx + sin(theta)*cy],
-        [sin(theta), cos(theta), -sin(theta)*cx + (1-cos(theta))*cy]])
-    return M
-
-
 def pattern_corner_detector(src_gray_):
+    print(src_gray_.shape, '照片形状')
     x_, y_ = int(src_gray_.shape[0] / 16), int(src_gray_.shape[1] / 16)
     part_1 = np.zeros((x_, y_))
     part_2 = np.ones((x_, y_)) * 255
@@ -154,10 +144,13 @@ def pattern_corner_detector(src_gray_):
     cx = template_.shape[1]
     cy = template_.shape[0]
 
-    rotation_matrix_ = getRotationMatrix2D(-35, cx=int(cx/2), cy=int(cy/2))
-    rotated_30 = cv2.warpAffine(template_, rotation_matrix_, (cx, cy))
+    print(cx, cy, 'template shape')
 
-    result = cv2.matchTemplate(src_gray_, rotated_30, cv2.TM_SQDIFF)
+    rotation_matrix_ = cv2.getRotationMatrix2D((int(cx/2), int(cy/2)), -35, 1)
+    rotated_ = cv2.warpAffine(template_, rotation_matrix_, (cx, cy))
+    ret_rotation, rotated_ = cv2.threshold(rotated_, 150, 255, cv2.THRESH_BINARY)
+
+    result = cv2.matchTemplate(src_gray_, rotated_, cv2.TM_SQDIFF)
     # cv2.normalize(result, result, 0, 1, cv2.NORM_MINMAX, -1)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
     # print(min_val, max_val, min_loc, max_loc)
@@ -166,7 +159,7 @@ def pattern_corner_detector(src_gray_):
     return center_loc
 
 
-file_name = 'B_MU_pic'
+file_name = 'B_ML'
 
 cordi, color = data_preprocess(file_name + '.txt')
 
