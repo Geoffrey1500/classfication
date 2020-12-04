@@ -93,6 +93,12 @@ def data_preprocess(file_name):
         scale_k_ = 255/(np.max(color_data_) - np.min(color_data_))
         color_in_gray_ = 0 + scale_k_*(color_data_ - np.min(color_data_))
 
+    # threshold_gray_ = int(np.average(color_in_gray_))
+    #
+    # color_in_binary_1 = np.where(color_in_gray_ >= threshold_gray_, color_in_gray_, 0)
+    # color_in_binary_2 = np.where(color_in_binary_1 < threshold_gray_, color_in_binary_1, 255)
+    # color_in_binary_2 = color_in_binary_2.astype('uint8')
+
     color_in_gray_ = color_in_gray_.astype('uint8')
 
     return coordinate_data_, color_in_gray_
@@ -131,6 +137,11 @@ def corner_detector(src_gray_, val):
 
 
 def pattern_corner_detector(src_gray_):
+    # threshold_gray_ = int(np.average(color_in_gray_))
+    #
+    # color_in_binary_1 = np.where(color_in_gray_ >= threshold_gray_, color_in_gray_, 0)
+    # color_in_binary_2 = np.where(color_in_binary_1 < threshold_gray_, color_in_binary_1, 255)
+    # color_in_binary_2 = color_in_binary_2.astype('uint8')
     ret2, src_gray_ = cv2.threshold(src_gray_, 150, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # print(src_gray_.shape, '照片形状')
     x_, y_ = int(src_gray_.shape[0] / 8), int(src_gray_.shape[1] / 8)
@@ -177,7 +188,7 @@ def pattern_corner_detector(src_gray_):
     return center_loc
 
 
-file_name = 'merged'
+file_name = 'B_MU_TLS'
 
 cordi, color = data_preprocess(file_name + '.txt')
 
